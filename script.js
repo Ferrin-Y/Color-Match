@@ -236,7 +236,8 @@ window.addEventListener("load", function() {
         buttons[i].setAttribute('title',buttons[i].id);
         colours.push(buttons[i].id);
     }
-    colours.push(""*(colours.length/2));
+    
+    colours.push(...Array(4).fill(""));
     for (let i = 0; i < buttons.length; i++) {
         buttons[i].addEventListener('click', function (e){
             colour = this.id;
