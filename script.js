@@ -1,12 +1,16 @@
 const svgNS = "http://www.w3.org/2000/svg";	
-let color = "cornflowerblue";
+let colour = "cornflowerblue";
 let intervals = null;
 let currentSet = [];
 let matches = [];
 let reset = null;
+let noCubes = 9;
+let gridArray = [];
+let colours = [];
+let colourGrid=[];
 const img = document.getElementById('glimpse');
 const svg = document.getElementById("board");
-var clock =document.getElementById("countdown");
+let clock =document.getElementById("countdown");
 let score = document.getElementById('score');
 
 function getMousePositionSVG(event) {
@@ -16,6 +20,47 @@ function getMousePositionSVG(event) {
     point = point.matrixTransform(svg.getScreenCTM().inverse());
     return point;
 }
+
+function makeMatch(){
+    let size = 160;
+    id = 1;
+    for (let i = 0; i < 3; i++) {
+        y = i*size;
+        for (let j = 0; j < 3; j++) {
+            let child = document.createElementNS(svgNS,"rect");
+            child.setAttribute("x",j*size)
+            child.setAttribute('y',y)
+            child.setAttribute('width',size)
+            child.setAttribute('height',size)
+            child.setAttribute('id',"i" + id)
+            child.setAttribute('filled',false);
+            child.setAttribute('rx',15);
+            id++;
+            gridArray.push(child);
+            img.appendChild(child);
+        }
+    }
+    console.log(gridArray);
+}
+
+function fillColors(){
+    /*gridArray.forEach(grid => {
+        let fill = colours[Math.floor(Math.random()*colours.length)]
+        currentSet.push(fill)
+        grid.setAttribute('fill',fill)
+        grid.setAttribute('filled',true)
+    });*/
+    let gridColors = [];
+    for (let i = 0; i < gridArray.length; i++) {
+        let fill = colours[Math.floor(Math.random()*colours.length)];
+        gridColors.push(fill)
+        gridArray[i].setAttribute('fill',fill)
+        gridArray[i].setAttribute('filled',true)  
+    }
+    currentSet = gridColors;
+    return currentSet;
+}
+
 
 
 var cubes = [];
@@ -37,8 +82,7 @@ function getGridID(point) {
     let x = parseInt(point.x);
     let y = parseInt(point.y);
     let foundCube = cubes.find(cube => 
-        (x > cube.x) && (x < cube.x + cube.width) &&
-        (y > cube.y) && (y < cube.y + cube.height));
+        (x > cube.x) && (x < cube.x + cube.width) && (y > cube.y) && (y < cube.y + cube.height));
     return foundCube;
 }
 
@@ -53,7 +97,8 @@ function addSquare(event){
         child.setAttribute('width',cube.width)
         child.setAttribute('height',cube.height)
         child.setAttribute('id',"p" + cube.id)
-        child.setAttribute('fill', color);
+        child.setAttribute('fill', colour);
+        child.setAttribute('rx',20)
         cube.Parent = true;
         svg.appendChild(child);
     }
@@ -69,24 +114,23 @@ function removeSquare(event){
         cube.Parent=false;
         svg.removeChild(child);
     }
-
 }
 
 
-let colorGrid=[];
+
 function getColors(){
-    colorGrid=[];
+    colourGrid=[];
     cubes.forEach(cube => {
         if(cube.Parent){
             let child = document.getElementById("p"+cube.id);
-            colorGrid.push(child.getAttribute("fill"));
+            colourGrid.push(child.getAttribute("fill"));
         }
         else{
-            colorGrid.push("");
+            colourGrid.push("");
         }
 
     });
-    return colorGrid;
+    return colourGrid;
 }
 
 
@@ -103,9 +147,11 @@ function submit(){
     let message = document.getElementById('message');
     answer = getColors();
     str = "Sorry! You didn't match right!";
-    if(compareArray(answer, currentSet[1])){
+    console.log(answer);
+    console.log(currentSet)
+    if(compareArray(answer, currentSet)){
         str = "Good job! You got it!"
-        score.innerText=parseInt(score.innerText)+100;  
+        score.innerText=parseInt(score.innerText)+(currentSet.filter(item => item !== "")).length*100;
     }
 
     img.classList.remove('flip');
@@ -134,6 +180,10 @@ function submit(){
                 cube.Parent=false;
             }
         });
+        gridArray.forEach(grid => {
+            grid.setAttribute('filled',false);
+            grid.setAttribute('fill',"")
+        });
     },2000)
 
     setTimeout(function(){
@@ -146,9 +196,7 @@ function submit(){
 function rounds(){
     str = "Make your match!"
     document.getElementById("message").innerText=str;
-    currentSet = matches[Math.floor(Math.random()*matches.length)];
-    matches.splice(matches.indexOf(currentSet),1);
-    img.src = currentSet[0];
+    currentSet = fillColors();
     let time = 4;
     img.classList.remove('flip')
     setTimeout(() => {
@@ -171,10 +219,8 @@ function rounds(){
 
 }
 
-
 function startGame(){
     score.innerText="0";
-    matches = [["images/1.png",['', 'cornflowerblue', '', '', 'palegreen', 'rebeccapurple', '', 'cornflowerblue', '']],["images/2.png",['', 'crimson', 'gold', 'gold', 'gold', '', '', 'palegreen', 'gold']],["images/3.png",['pink', '', 'pink', 'pink', 'crimson', 'pink', '', 'pink', '']],["images/4.png",['', 'gold', '', 'gold', 'cornflowerblue', 'gold', '', 'rebeccapurple', '']],['images/5.png',['cornflowerblue', 'cornflowerblue', '', 'cornflowerblue', 'crimson', 'palegreen', '', 'palegreen', 'palegreen']],["images/6.png",['pink', '', 'rebeccapurple', '', 'crimson', '', 'rebeccapurple', '', 'pink']]];
     rounds();
 }
 
@@ -188,12 +234,13 @@ window.addEventListener("load", function() {
     for (i = 0; i < buttons.length; i++) {
         buttons[i].style.backgroundColor = buttons[i].id;
         buttons[i].setAttribute('title',buttons[i].id);
+        colours.push(buttons[i].id);
     }
+    colours.push(""*(colours.length/2));
     for (let i = 0; i < buttons.length; i++) {
         buttons[i].addEventListener('click', function (e){
-            color = this.id;
+            colour = this.id;
         })
-        
     }
-
+    makeMatch();
 });
