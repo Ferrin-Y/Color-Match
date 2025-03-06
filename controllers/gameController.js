@@ -1,79 +1,67 @@
 // controllers/gameController.js
 const gameModel = require('../models/gameModel');
 
-/**
- * Starts a new game round.
- * - Receives grid size and button colors from the frontend.
- * - Generates a new target grid.
- * - Resets the player's grid and score.
- */
+// Start a new game round
 function startNewRound(req, res) {
-    const { gridSize, buttonColors } = req.body; // Get grid size and colors from the frontend
+    const { gridSize, buttonColors } = req.body;
 
-    // Set the grid size and button colors in the game model
+    if (!gridSize || !Array.isArray(buttonColors) || buttonColors.length === 0) {
+        return res.status(400).json({ error: "Invalid input data" });
+    }
+
+    // Set the game parameters (grid size and colors)
     gameModel.setGridSize(gridSize, buttonColors);
+    gameModel.gameState.targetGrid = gameModel.generateRandomGrid(); // Generate the secret grid
 
-    // Generate a new target grid
-    gameModel.gameState.targetGrid = gameModel.generateRandomGrid();
-
-    // Reset player's grid and score
-    gameModel.gameState.playerGrid = Array(gameModel.gameState.gridSize * gameModel.gameState.gridSize).fill("");
-    gameModel.gameState.score = 0;
-
-    // Store score in session so it persists
-    req.session.score = gameModel.gameState.score;
-
-    // Send the response with necessary game state
+    // Respond with the grid size and button colors (but NOT the full answer)
     res.json({
         gridSize: gameModel.gameState.gridSize,
-        score: req.session.score,
+        buttonColors: gameModel.gameState.buttonColors,
+        matchGrid: gameModel.getHiddenGrid() // Send a grid with hidden colors
     });
 }
 
-/**
- * Submits the player's grid for comparison.
- * - Compares the player's grid with the target grid.
- * - Updates the score if correct.
- */
+
+// Submit the player's grid for comparison
 function submitGame(req, res) {
     const { playerGrid } = req.body;
+    
+    // Validate player grid
+    if (!Array.isArray(playerGrid) || playerGrid.length !== gameModel.gameState.targetGrid.length) {
+        return res.status(400).json({ error: "Invalid player grid" });
+    }
+    
+    const match = gameModel.checkMatch(playerGrid); // Check if player's grid matches the target grid
 
-    // Compare player's grid with the target grid
-    const match = gameModel.checkMatch(playerGrid);
-
-    // Update session score
+    // Update session score after match
     req.session.score = gameModel.gameState.score;
 
     res.json({
         match,
-        score: req.session.score,
+        score: req.session.score
     });
 }
 
-/**
- * Retrieves the current leaderboard.
- */
+// Get the leaderboard
 function getLeaderboard(req, res) {
     res.json(gameModel.gameState.leaderboard);
 }
 
-/**
- * Adds the player's score to the leaderboard.
- * - Player submits their name, and score is saved in the leaderboard.
- */
+// Add player's score to leaderboard
 function addScoreToLeaderboard(req, res) {
     const { playerName } = req.body;
-    
-    // Add player to leaderboard
-    gameModel.addToLeaderboard(playerName);
 
+    if (!playerName) {
+        return res.status(400).json({ error: "Player name is required" });
+    }
+
+    gameModel.addToLeaderboard(playerName); // Add score to leaderboard
     res.json(gameModel.gameState.leaderboard);
 }
 
-// Export functions for use in server.js
 module.exports = {
     startNewRound,
     submitGame,
     getLeaderboard,
-    addScoreToLeaderboard,
+    addScoreToLeaderboard
 };
