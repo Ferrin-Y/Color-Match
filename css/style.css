@@ -38,10 +38,25 @@
     display:block;
 } 
 
+footer{
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 0 10px;
+    text-align: center;
+}
+
+footer p{
+    margin: 0;
+    padding: 10px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
 header{
     margin-top: 10px;
     text-align: center;
 }
+
 
 .buttons > button{
     width: 50px;
@@ -85,7 +100,7 @@ header{
 .flip{
     transform-style: preserve-3d;
     animation: flip 1s forwards;
-    animation-delay: 3s;
+    animation-delay: var(--animation-delay, 6s);
     animation-timing-function: ease-in-out;
     animation-iteration-count: 1;
 }
@@ -144,7 +159,6 @@ header{
 }
 
 rect{
-    stroke-width: 10;
     stroke: white;
 }
 

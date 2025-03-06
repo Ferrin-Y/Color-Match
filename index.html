@@ -13,7 +13,7 @@
 </head>
 <body>
     <nav id="navbar-1" class="fixed-top navbar px-3">
-        <a class="navbar-brand" href="index.html">Assignment 4</a>
+        <a class="navbar-brand" href="index.html">Ferrin Yesudasan</a>
     </nav>
     <header>
         <h3>Colour Matcher</h3>
@@ -21,26 +21,16 @@
     <div class="container">
         <div class="Zone">
            <svg id="board" width="500" height="500" viewbox="0,0,900,900">
-                <rect width="300" height="300" x="0" y="0" rx="10" id="c1"></rect>
-                <rect width="300" height="300" x="300" y="0" rx="10" id="c2"></rect>
-                <rect width="300" height="300" x="600" y="0" rx="10" id="c3"></rect>
-                <rect width="300" height="300" x="0" y="300" rx="10" id="c4"></rect>
-                <rect width="300" height="300" x="300" y="300" rx="10" id="c5"></rect>
-                <rect width="300" height="300" x="600" y="300" rx="10" id="c6"></rect>
-                <rect width="300" height="300" x="0" y="600" rx="10" id="c7"></rect>
-                <rect width="300" height="300" x="300" y="600" rx="10" id="c8"></rect>
-                <rect width="300" height="300" x="600" y="600" rx="10" id="c9"></rect>
            </svg>
 
             <div class="buttons mt-5 text-center">
-                <button class="button" id="cornflowerblue">  </button>
-                <button class="button" id="crimson"></button>
-                <button class="button" id="palegreen"></button>
-                <button class="button" id="gold"></button>
-                <button class="button" id="pink"></button>
+                <button class="button" id="mediumpurple">  </button>
                 <button class="button" id="rebeccapurple"></button>
-                <button id="cornsilk" class="button"></button>
-                <button id="sienna" class="button"></button>
+                <button class="button" id="skyblue"></button>
+                <button class="button" id="lightgreen"></button>
+                <button class="button" id="khaki"></button>
+                <button class="button" id="coral"></button>
+                <button id="indianred" class="button"></button>
             </div>
         </div>
 
@@ -50,7 +40,7 @@
               </svg>
             </div>
             <div class="sec">
-                <p><span id="countdown">3</span>s</p>
+                <p><span id="countdown">0</span>s</p>
             </div>
         </div>
 
@@ -66,7 +56,7 @@
                 <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-bs-parent="#accordion">
                   <div class="card-body">
                     <ul>
-                      <li>The match card flips in 3 seconds</li>
+                      <li>The match card flips when the timer runs out</li>
                       <li>Once flipped, match the colors in the card to the grid</li>
                       <li>Click once to fill with colour</li>
                       <li>Double click to remove colour</li>
@@ -81,8 +71,17 @@
             </div> 
         <div class="controls">
             <hr>
+            <h5><label for="difficulty" class="form-label">Difficulty Range</label></h5>
+            <input type="range" class="form-range" min="1" max="13" step="1" id="difficulty">
+            <div class="d-flex justify-content-between">
+              <span>Easy</span>
+              <span>Hard</span>
+            </div>
+            <hr>
               <button id="start">Start</button>
-              <button id="submit">Submit</button>
+              <button id="submit" disabled>Submit</button>
+              <button id="clear">Clear</button>
+              <button id="quit">Quit</button>
               |<span id="scoreboard"><span id="message"></span><span id="resTime"></span>| <span class="score">Score: <span id="score">0</span></span></span>
             <hr> 
           </div>
