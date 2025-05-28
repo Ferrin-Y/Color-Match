@@ -1,8 +1,8 @@
 const svgNS = "http://www.w3.org/2000/svg";	
-let colour = "cornflowerblue"; // Default colour
+let colour = "skyblue"; // Default colour
 let numberOfCubes = 6; // Default grid size
 let gridArray = []; // Match grid elements
-let cubes = []; // Player grid elements
+let cubes = []; // Player grid tracking objects
 let colours = []; // Color options
 let gameState = false; // Game running status
 let timeRemaining = 5; // Countdown timer duration
@@ -45,11 +45,57 @@ function setButtonColors() {
     }
 }
 
+function getMousePositionSVG(event) {
+    var point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    point = point.matrixTransform(svg.getScreenCTM().inverse());
+    return point;
+}
+
+/**
+ * Creates an array of cube objects with their properties for tracking.
+ * Each cube represents a grid cell on the game board.
+ */
+function cubeArray() {
+    cubes = []; // Reset the cubes array
+    for (let i = 1; i < numberOfCubes * numberOfCubes + 1; i++) {
+        let c = document.getElementById("c" + i);
+        if (c) {
+            let cube = {
+                x: parseInt(c.getAttribute("x")),
+                y: parseInt(c.getAttribute("y")),
+                width: parseInt(c.getAttribute("width")),
+                height: parseInt(c.getAttribute("height")),
+                id: c.id,
+                Parent: false, // Track if this cell has a colored square
+            };
+            cubes.push(cube);
+        }
+    }
+}
+
+/**
+ * Finds the cube on the grid that corresponds to the given point.
+ * @param {DOMPoint} point - The point on the SVG (e.g., mouse position).
+ * @returns {Object|null} The cube object if found; otherwise, null.
+ */
+function getGridID(point) {
+    let x = parseInt(point.x);
+    let y = parseInt(point.y);
+    return cubes.find(
+        (cube) =>
+            x > cube.x &&
+            x < cube.x + cube.width &&
+            y > cube.y &&
+            y < cube.y + cube.height
+    );
+}
+
 /** Generates the player's grid based on `numberOfCubes`. */
 function makeGrid() {
     svg.innerHTML = ''; // Clear existing grid
-    cubes = [];
-
+    
     let size = 900 / numberOfCubes;
     let id = 1;
 
@@ -68,9 +114,11 @@ function makeGrid() {
             child.setAttribute("fill", "none"); // No fill before coloring
             id++;
             svg.appendChild(child);
-            cubes.push(child);
         }
     }
+    
+    // Create the cube tracking array after grid is built
+    cubeArray();
 }
 
 /** Generates an empty match grid before the game starts. */
@@ -166,30 +214,65 @@ function clearMatchGrid() {
     });
 }
 
-/** Handles user clicking on the grid to color a square. */
+/**
+ * Adds a square to the grid at the clicked position.
+ * The square is visually represented with the current `colour`.
+ * @param {MouseEvent} event - The mouse click event on the SVG.
+ */
 function addSquare(event) {
-    if (!gameState) return; // Only allow coloring during game
+    if (!gameState) {
+        console.log("Game not started - can't color");
+        return;
+    }
     
-    let target = event.target;
-    if (target.tagName === 'rect') {
-        target.setAttribute("fill", colour);
+    let point = getMousePositionSVG(event);
+    let cube = getGridID(point);
+    
+    if (cube && !cube.Parent) {
+        let child = document.createElementNS(svgNS, "rect");
+        child.setAttribute("x", cube.x);
+        child.setAttribute("y", cube.y);
+        child.setAttribute("width", cube.width);
+        child.setAttribute("height", cube.height);
+        child.setAttribute("id", "p" + cube.id);
+        child.setAttribute("fill", colour);
+        child.setAttribute("stroke", "#333");
+        child.setAttribute("stroke-width", (30 / numberOfCubes) * 2);
+        child.setAttribute("rx", 60 / numberOfCubes);
+        cube.Parent = true;
+        svg.appendChild(child);
     }
 }
 
-/** Handles user double-clicking a square to remove color. */
+/**
+ * Removes a square from the grid at the clicked position.
+ * @param {MouseEvent} event - The mouse double-click event on the SVG.
+ */
 function removeSquare(event) {
     if (!gameState) return; // Only allow removing during game
     
-    let target = event.target;
-    if (target.tagName === 'rect') {
-        target.setAttribute("fill", "none"); // Remove color
+    let point = getMousePositionSVG(event);
+    let cube = getGridID(point);
+    
+    if (cube && cube.Parent) {
+        let child = document.getElementById("p" + cube.id);
+        if (child) {
+            cube.Parent = false;
+            svg.removeChild(child);
+        }
     }
 }
 
 /** Clears all colors from the player grid. */
 function clearGrid() {
     cubes.forEach(cube => {
-        cube.setAttribute("fill", "none");
+        if (cube.Parent) {
+            let child = document.getElementById("p" + cube.id);
+            if (child) {
+                svg.removeChild(child);
+                cube.Parent = false;
+            }
+        }
     });
 }
 
@@ -197,10 +280,13 @@ function clearGrid() {
 function submitGrid() {
     if (!gameState) return;
 
-    // Get current player grid state
+    // Get current player grid state from the colored overlay squares
     const playerGrid = cubes.map(cube => {
-        const fill = cube.getAttribute("fill");
-        return fill === "none" ? "" : fill;
+        if (cube.Parent) {
+            const coloredSquare = document.getElementById("p" + cube.id);
+            return coloredSquare ? coloredSquare.getAttribute("fill") : "";
+        }
+        return "";
     });
 
     fetch('/api/game/submit', {
