@@ -5,8 +5,6 @@ import 'dotenv/config';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-
-
 const app = express();
 const port = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
@@ -34,6 +32,7 @@ app.post('/api/game/start', gameController.startNewRound);  // Start a new game 
 app.post('/api/game/submit', gameController.submitGame);    // Submit grid for comparison
 app.get('/api/leaderboard', gameController.getLeaderboard); // Get leaderboard
 app.post('/api/leaderboard', gameController.addScoreToLeaderboard); // Submit score
+app.post('/api/game/reset', gameController.resetGame); //Reset Game
 
 // Serve the index.html from views
 app.get('/', (req, res) => {
