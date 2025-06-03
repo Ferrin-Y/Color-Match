@@ -8,6 +8,7 @@ let gameState = false; // Game running status
 let timeRemaining = 5; // Countdown timer duration
 let countdownInterval = null;
 let currentScore = 0;
+let currentRounds = 0;
 
 const matchBoard = document.getElementById("glimpse"); // Match board (target grid)
 const svg = document.getElementById("board"); // Player board (editable grid)
@@ -20,6 +21,17 @@ const countdownDisplay = document.getElementById("countdown"); // Timer display
 const scoreDisplay = document.getElementById("score"); // Score display
 const messageDisplay = document.getElementById("message"); // Message display
 const buttons = document.getElementsByClassName("button"); // Color buttons
+const refreshLeaderboardBtn = document.getElementById("refreshLeaderboard"); // Refresh button
+
+// Toast and Modal elements
+const gameToast = new bootstrap.Toast(document.getElementById('gameToast'));
+const toastMessage = document.getElementById('toastMessage');
+const nameModal = new bootstrap.Modal(document.getElementById('nameModal'));
+const playerNameInput = document.getElementById('playerNameInput');
+const submitToLeaderboardBtn = document.getElementById('submitToLeaderboard');
+const skipLeaderboardBtn = document.getElementById('skipLeaderboard');
+const finalScoreDisplay = document.getElementById('finalScore');
+const finalRoundsDisplay = document.getElementById('finalRounds');
 
 /** Initializes the game by setting up buttons and default grids. */
 function initializeGame() {
@@ -28,6 +40,7 @@ function initializeGame() {
     makeMatch(); // Generate blank match grid
     submitButton.disabled = true; // Keep submit button disabled initially
     updateScore(0); // Initialize score display
+    loadLeaderboard(); // Load initial leaderboard
 }
 
 /** Assigns colors to the buttons and saves them for later use. */
@@ -152,44 +165,56 @@ function makeMatch() {
 /** Starts the game and prepares the first round. */
 function startGame() {
     gameState = true;
+    currentRounds = 0;
     startButton.disabled = true;
     slider.disabled = true;
     submitButton.disabled = false;
     clearButton.disabled = false;
-    showMessage("Game started! Memorize the pattern...");
+    showToastMessage("Game started! Memorize the pattern...", "success");
 
-    fetch('/api/game/start', {
+    // First reset the game
+    fetch('/api/game/reset', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gridSize: numberOfCubes, buttonColors: colours })
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(() => {
+        // Then start the new round
+        return fetch('/api/game/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gridSize: numberOfCubes, buttonColors: colours })
+        });
     })
     .then(response => response.json())
     .then(data => {
         if (Array.isArray(data.matchGrid)) {
             console.log("Received Match Grid:", data.matchGrid);
-            startRound(data.matchGrid); // Begin round with colors
+            startRound(data.matchGrid);
+            updateScore(0); // Update frontend score display
         } else {
             console.error("Error: Backend did not return a valid matchGrid.");
-            showMessage("Error starting game. Please try again.");
+            showToastMessage("Error starting game. Please try again.", "danger");
         }
     })
     .catch(error => {
         console.error("Error starting game:", error);
-        showMessage("Error connecting to server. Please try again.");
+        showToastMessage("Error connecting to server. Please try again.", "danger");
     });
 }
 
 /** Begins a round and fills the match grid with colors. */
 function startRound(matchGrid) {
+    currentRounds++;
+    
     // Fill the match grid with colors
     gridArray.forEach((cell, index) => {
         cell.setAttribute("fill", matchGrid[index] || "none");
     });
 
     // Start the countdown timer
-    timeRemaining = 5;
+    timeRemaining = 5 + Math.floor(numberOfCubes/2);
     countdownDisplay.innerText = timeRemaining;
-    showMessage("Memorize the pattern!");
+    showToastMessage("Memorize the pattern!", "info");
 
     if (countdownInterval) {
         clearInterval(countdownInterval);
@@ -202,7 +227,7 @@ function startRound(matchGrid) {
         if (timeRemaining <= 0) {
             clearInterval(countdownInterval);
             clearMatchGrid(); // Hide match grid when timer runs out
-            showMessage("Now recreate the pattern!");
+            showToastMessage("Now recreate the pattern!", "danger");
         }
     }, 1000);
 }
@@ -220,10 +245,10 @@ function clearMatchGrid() {
  * @param {MouseEvent} event - The mouse click event on the SVG.
  */
 function addSquare(event) {
-    if (!gameState) {
-        console.log("Game not started - can't color");
-        return;
-    }
+    // if (!gameState) {
+    //     console.log("Game not started - can't color");
+    //     return;
+    // }
     
     let point = getMousePositionSVG(event);
     let cube = getGridID(point);
@@ -249,7 +274,7 @@ function addSquare(event) {
  * @param {MouseEvent} event - The mouse double-click event on the SVG.
  */
 function removeSquare(event) {
-    if (!gameState) return; // Only allow removing during game
+    //if (!gameState) return; // Only allow removing during game
     
     let point = getMousePositionSVG(event);
     let cube = getGridID(point);
@@ -297,27 +322,27 @@ function submitGrid() {
     .then(response => response.json())
     .then(data => {
         if (data.match) {
-            showMessage("Perfect match! +100 points");
+            showToastMessage(`Perfect match! +${data.points * 100} points 🎉`, "success");
             updateScore(data.score);
             // Start next round after delay
             setTimeout(() => {
                 startNextRound();
             }, 2000);
         } else {
-            showMessage("Not quite right. Try again!");
+            showToastMessage("Not quite right. Try again! 🤔", "warning");
             updateScore(data.score);
         }
     })
     .catch(error => {
         console.error("Error submitting grid:", error);
-        showMessage("Error submitting. Please try again.");
+        showToastMessage("Error submitting. Please try again.", "danger");
     });
 }
 
 /** Starts the next round. */
 function startNextRound() {
     clearGrid(); // Clear player grid
-    showMessage("Next round starting...");
+    showToastMessage("Next round starting...", "info");
     
     // Request new pattern
     fetch('/api/game/start', {
@@ -336,7 +361,7 @@ function startNextRound() {
     });
 }
 
-/** Quits the current game. */
+/** Quits the current game and shows name input modal. */
 function quitGame() {
     gameState = false;
     startButton.disabled = false;
@@ -351,7 +376,134 @@ function quitGame() {
     clearGrid();
     clearMatchGrid();
     countdownDisplay.innerText = "0";
-    showMessage("Game ended. Final score: " + currentScore);
+    
+    // Show game over modal
+    finalScoreDisplay.textContent = currentScore;
+    finalRoundsDisplay.textContent = currentRounds;
+    playerNameInput.value = '';
+    nameModal.show();
+}
+
+/** Submits score to leaderboard. */
+function submitToLeaderboard() {
+    const playerName = playerNameInput.value.trim();
+    
+    if (!playerName) {
+        showToastMessage("Please enter your name!", "warning");
+        return;
+    }
+    
+    if (playerName.length > 20) {
+        showToastMessage("Name too long! Maximum 20 characters.", "warning");
+        return;
+    }
+
+    fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerName: playerName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToastMessage("Added to leaderboard! 🏆", "success");
+            loadLeaderboard(); // Refresh leaderboard
+            nameModal.hide();
+        } else {
+            showToastMessage(data.error || "Failed to add to leaderboard", "danger");
+        }
+    })
+    .catch(error => {
+        console.error("Error submitting to leaderboard:", error);
+        showToastMessage("Error submitting to leaderboard", "danger");
+    });
+}
+
+/** Loads and displays the leaderboard. */
+function loadLeaderboard() {
+    fetch('/api/leaderboard')
+    .then(response => response.json())
+    .then(data => {
+        displayLeaderboard(data);
+    })
+    .catch(error => {
+        console.error("Error loading leaderboard:", error);
+        document.getElementById('leaderboardContent').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                <p>Error loading leaderboard</p>
+            </div>
+        `;
+    });
+}
+
+/** Displays the leaderboard data. */
+function displayLeaderboard(leaderboardData) {
+    const container = document.getElementById('leaderboardContent');
+    
+    if (!Array.isArray(leaderboardData) || leaderboardData.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-trophy"></i>
+                <p>No scores yet. Be the first!</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div class="table-responsive">';
+    html += '<table class="table table-dark table-sm table-striped">';
+    html += `
+        <thead>
+            <tr class="text-warning">
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Score</th>
+                <th scope="col">Rounds</th>
+                <th scope="col">Date</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    leaderboardData.forEach((entry, index) => {
+        const date = new Date(entry.date).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        const position = index + 1;
+        let rankIcon = '';
+        if (position === 1) rankIcon = '<i class="bi bi-trophy-fill text-warning"></i>';
+        else if (position === 2) rankIcon = '<i class="bi bi-award-fill text-secondary"></i>';
+        else if (position === 3) rankIcon = '<i class="bi bi-award-fill text-warning"></i>';
+        else rankIcon = position;
+
+        html += `
+            <tr>
+                <td>${rankIcon}</td>
+                <td class="fw-bold">${escapeHtml(entry.name)}</td>
+                <td class="text-success">${entry.score}</td>
+                <td class="text-info">${entry.rounds}</td>
+                <td class="text-muted small">${date}</td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+/** Escapes HTML to prevent XSS. */
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
 }
 
 /** Updates the score display. */
@@ -360,9 +512,25 @@ function updateScore(newScore) {
     scoreDisplay.innerText = currentScore;
 }
 
-/** Shows a message to the user. */
+/** Shows a message to the user (legacy support). */
 function showMessage(message) {
     messageDisplay.innerText = message;
+}
+
+/** Shows a toast message with different styles. */
+function showToastMessage(message, type = 'primary') {
+    toastMessage.textContent = message;
+    const toast = document.getElementById('gameToast');
+    
+    // Remove existing type classes
+    toast.classList.remove('primary', 'success', 'warning', 'danger', 'info');
+    
+    toast.classList.add(type);
+    
+    gameToast.show();
+    
+    // Also update legacy message display
+    showMessage(message);
 }
 
 /** Updates grid size dynamically when slider is moved. */
@@ -384,6 +552,21 @@ Array.from(buttons).forEach(button => {
         colour = button.id;
     });
 });
+
+/** Modal event listeners */
+submitToLeaderboardBtn.addEventListener('click', submitToLeaderboard);
+skipLeaderboardBtn.addEventListener('click', () => {
+    nameModal.hide();
+    showToastMessage(`Game ended. Final score: ${currentScore}`, "info");
+});
+
+playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        submitToLeaderboard();
+    }
+});
+
+refreshLeaderboardBtn.addEventListener('click', loadLeaderboard);
 
 /** Event Listeners */
 window.addEventListener("load", initializeGame);
