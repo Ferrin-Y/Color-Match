@@ -70,7 +70,9 @@ function submitGame(req, res) {
         console.log("Target grid:", gameState.targetGrid);
         
         // Check if player's grid matches the target grid
-        const match = checkMatch(playerGrid);
+        const result = checkMatch(playerGrid);
+        const match = result.match;
+        const matchedCount = result.matchedCount;
         const currentScore = getCurrentScore();
 
         console.log("Match result:", match, "Score:", currentScore);
@@ -84,7 +86,8 @@ function submitGame(req, res) {
         res.json({
             match,
             score: currentScore,
-            targetGrid: gameState.targetGrid // Send target grid for reference
+            targetGrid: gameState.targetGrid, // Send target grid for reference
+            points: matchedCount
         });
 
     } catch (error) {

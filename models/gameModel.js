@@ -53,14 +53,29 @@ function checkMatch(playerGrid) {
     // Convert empty strings to "none" for comparison
     const normalizedPlayerGrid = playerGrid.map(cell => cell === "" ? "none" : cell);
     
-    const match = normalizedPlayerGrid.every((color, idx) => color === gameState.targetGrid[idx]);
+
+    let matchedCount = 0;
+    const perfectMatch = normalizedPlayerGrid.every((color, idx) => {
+        const targetColor = gameState.targetGrid[idx];
+        
+        const isMatch = color === targetColor;
+
+        // Only count if neither color is "none"
+        if (isMatch && targetColor !== "none") { 
+            matchedCount++; 
+        }
+
+        return isMatch;
+    });
     
-    if (match) {
-        gameState.score += 100;  // Increment score for correct match
+    //const match = normalizedPlayerGrid.every((color, idx) => color === gameState.targetGrid[idx]);
+    
+    if (perfectMatch) {
+        gameState.score += (matchedCount * 100) + 50;  // Increment score for correct match
         gameState.currentRound++;
     }
     
-    return match;
+    return { match: perfectMatch, matchedCount: matchedCount }
 }
 
 // Function to get current score
