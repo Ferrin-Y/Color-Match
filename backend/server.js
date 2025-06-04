@@ -41,7 +41,7 @@ app.use(session({
 // Only serve static files in development
 if (process.env.NODE_ENV !== 'production') {
     // Serve static files (CSS, JS, images)
-    app.use(serverStatic(join(__dirname, '../frontend/public')));
+    app.use(serverStatic(join(__dirname, '../frontend')));
 }
 
 
