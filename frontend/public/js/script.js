@@ -173,22 +173,23 @@ function startGame() {
     showToastMessage("Game started! Memorize the pattern...", "success");
 
     // First reset the game
-    fetch('/api/game/reset', {
+    fetch(`${window.API_BASE_URL}/api/game/reset`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
     })
     .then(() => {
         // Then start the new round
-        return fetch('/api/game/start', {
+        return fetch(`${window.API_BASE_URL}/api/game/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ gridSize: numberOfCubes, buttonColors: colours })
         });
     })
     .then(response => response.json())
     .then(data => {
         if (Array.isArray(data.matchGrid)) {
-            console.log("Received Match Grid:", data.matchGrid);
             startRound(data.matchGrid);
             updateScore(0); // Update frontend score display
         } else {
@@ -240,51 +241,49 @@ function clearMatchGrid() {
 }
 
 /**
- * Adds a square to the grid at the clicked position.
- * The square is visually represented with the current `colour`.
+ * Handles clicked point on the SVG to determine whether it's a filled cube or empty
  * @param {MouseEvent} event - The mouse click event on the SVG.
  */
-function addSquare(event) {
-    // if (!gameState) {
-    //     console.log("Game not started - can't color");
-    //     return;
-    // }
-    
+function handleClick(event){
     let point = getMousePositionSVG(event);
     let cube = getGridID(point);
     
     if (cube && !cube.Parent) {
-        let child = document.createElementNS(svgNS, "rect");
-        child.setAttribute("x", cube.x);
-        child.setAttribute("y", cube.y);
-        child.setAttribute("width", cube.width);
-        child.setAttribute("height", cube.height);
-        child.setAttribute("id", "p" + cube.id);
-        child.setAttribute("fill", colour);
-        child.setAttribute("stroke", "#333");
-        child.setAttribute("stroke-width", (30 / numberOfCubes) * 2);
-        child.setAttribute("rx", 60 / numberOfCubes);
-        cube.Parent = true;
-        svg.appendChild(child);
+        addSquare(cube);
+    }else if(cube && cube.Parent){
+        removeSquare(cube);
     }
 }
 
 /**
- * Removes a square from the grid at the clicked position.
- * @param {MouseEvent} event - The mouse double-click event on the SVG.
+ * Adds a square to the grid at the clicked position.
+ * The square is visually represented with the current `colour`.
+ * @param {Object} cube - The square that was clicked on.
  */
-function removeSquare(event) {
-    //if (!gameState) return; // Only allow removing during game
-    
-    let point = getMousePositionSVG(event);
-    let cube = getGridID(point);
-    
-    if (cube && cube.Parent) {
-        let child = document.getElementById("p" + cube.id);
-        if (child) {
-            cube.Parent = false;
-            svg.removeChild(child);
-        }
+function addSquare(cube) {
+    let child = document.createElementNS(svgNS, "rect");
+    child.setAttribute("x", cube.x);
+    child.setAttribute("y", cube.y);
+    child.setAttribute("width", cube.width);
+    child.setAttribute("height", cube.height);
+    child.setAttribute("id", "p" + cube.id);
+    child.setAttribute("fill", colour);
+    child.setAttribute("stroke", "#333");
+    child.setAttribute("stroke-width", (30 / numberOfCubes) * 2);
+    child.setAttribute("rx", 60 / numberOfCubes);
+    cube.Parent = true;
+    svg.appendChild(child);
+}
+
+/**
+ * Removes a square from the grid at the clicked position.
+ * @param {Object} cube - The square that was clicked on.
+ */
+function removeSquare(cube) {    
+    let child = document.getElementById("p" + cube.id);
+    if (child) {
+        cube.Parent = false;
+        svg.removeChild(child);
     }
 }
 
@@ -314,9 +313,10 @@ function submitGrid() {
         return "";
     });
 
-    fetch('/api/game/submit', {
+    fetch(`${window.API_BASE_URL}/api/game/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ playerGrid: playerGrid })
     })
     .then(response => response.json())
@@ -345,9 +345,10 @@ function startNextRound() {
     showToastMessage("Next round starting...", "info");
     
     // Request new pattern
-    fetch('/api/game/start', {
+    fetch(`${window.API_BASE_URL}/api/game/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ gridSize: numberOfCubes, buttonColors: colours })
     })
     .then(response => response.json())
@@ -398,9 +399,10 @@ function submitToLeaderboard() {
         return;
     }
 
-    fetch('/api/leaderboard', {
+    fetch(`${window.API_BASE_URL}/api/leaderboard`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ playerName: playerName })
     })
     .then(response => response.json())
@@ -421,7 +423,7 @@ function submitToLeaderboard() {
 
 /** Loads and displays the leaderboard. */
 function loadLeaderboard() {
-    fetch('/api/leaderboard')
+    fetch(`${window.API_BASE_URL}/api/leaderboard`)
     .then(response => response.json())
     .then(data => {
         displayLeaderboard(data);
@@ -570,8 +572,7 @@ refreshLeaderboardBtn.addEventListener('click', loadLeaderboard);
 
 /** Event Listeners */
 window.addEventListener("load", initializeGame);
-svg.addEventListener("click", addSquare);
-svg.addEventListener("dblclick", removeSquare);
+svg.addEventListener("click", handleClick);
 startButton.addEventListener("click", startGame);
 submitButton.addEventListener("click", submitGrid);
 clearButton.addEventListener("click", clearGrid);
