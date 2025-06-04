@@ -4,7 +4,7 @@ const config = {
         API_BASE_URL: 'http://localhost:3000'
     },
     production: {
-        API_BASE_URL: 'https://color-match.onrender.com'
+        API_BASE_URL: 'https://color-match-xrh3.onrender.com'
     }
 };
 
