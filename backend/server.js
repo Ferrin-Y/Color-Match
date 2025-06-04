@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 // CORS Configuration
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-        ? ['https://ferrin-y.github.io/color-match'] 
+        ? ['https://ferrin-y.github.io/Color-Match','https://ferrin-y.github.io' ] 
         : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5500'], // Development origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
