@@ -41,7 +41,7 @@ app.use(session({
 // Only serve static files in development
 if (process.env.NODE_ENV !== 'production') {
     // Serve static files (CSS, JS, images)
-    app.use(serverStatic(join(__dirname, 'public')));
+    app.use(serverStatic(join(__dirname, '../frontend/public')));
 }
 
 
@@ -64,7 +64,7 @@ app.get('/health', (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
     // Serve the index.html from views
     app.get('/', (req, res) => {
-        res.sendFile(join(__dirname, 'index.html'));
+        res.sendFile(join(__dirname, '../frontend/index.html'));
     });
 }
 
