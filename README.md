@@ -19,8 +19,8 @@ Color Match is an interactive web-based game that tests your memory and attentio
 
 ### Prerequisites
 
-- Node.js (v14+)
-- npm
+- Node.js (v14+) and npm (for development)
+- Docker (for containerized deployment)
 
 ### Installation
 
@@ -30,7 +30,8 @@ Color Match is an interactive web-based game that tests your memory and attentio
    cd Color-Match
    ```
 
-2. Install backend dependencies:
+2. **For Development:**
+   Install backend dependencies:
    ```bash
    cd backend
    npm install
@@ -61,6 +62,25 @@ npm start
 ```
 
 Then open your browser and navigate to `http://localhost:3000`
+
+### Using Docker
+
+1. Build the Docker image:
+   ```bash
+   docker build -t color-match .
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -p 3000:3000 color-match
+   ```
+
+   The application will be available at `http://localhost:3000`.
+
+   To run in the background:
+   ```bash
+   docker run -d -p 3000:3000 color-match
+   ```
 
 ## 📁 Project Structure
 

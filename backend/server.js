@@ -44,29 +44,21 @@ if (process.env.NODE_ENV !== 'production') {
     app.use(serverStatic(join(__dirname, '../frontend')));
 }
 
-
-// Import the game controller
-import gameController from './controllers/gameController.js';
-
-// Define API routes
-app.post('/api/game/start', gameController.startNewRound);  // Start a new game round
-app.post('/api/game/submit', gameController.submitGame);    // Submit grid for comparison
-app.get('/api/leaderboard', gameController.getLeaderboard); // Get leaderboard
-app.post('/api/leaderboard', gameController.addScoreToLeaderboard); // Submit score
-app.post('/api/game/reset', gameController.resetGame); //Reset Game
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+// Serve static files in production as well
+app.use(serverStatic(join(__dirname, './frontend')));
 
 // Only serve index.html in development
 if (process.env.NODE_ENV !== 'production') {
     // Serve the index.html from views
     app.get('/', (req, res) => {
-        res.sendFile(join(__dirname, '../frontend/index.html'));
+        res.sendFile(join(__dirname, './frontend/index.html'));
     });
 }
+
+// Serve index.html in production as well
+app.get('/', (req, res) => {
+    res.sendFile(join(__dirname, './frontend/index.html'));
+});
 
 // Start the server
 app.listen(port, () => {
